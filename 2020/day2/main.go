@@ -51,6 +51,41 @@ func Part1() {
 	fmt.Println(numValid)
 }
 
+func Part2() {
+	wd, _ := os.Getwd()
+	file, err := os.Open(wd + "/day2/input.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	scanner := bufio.NewScanner(file)
+
+	numValid := 0
+	pattern := regexp.MustCompile("([0-9]+)-([0-9]+) ([a-z]): (.+)")
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		match := pattern.FindStringSubmatch(line)
+
+		pos1, _ := strconv.Atoi(match[1])
+		pos2, _ := strconv.Atoi(match[2])
+		char := match[3]
+		password := match[4]
+
+		if string(password[pos1-1]) == char && string(password[pos2-1]) != char || string(password[pos2-1]) == char && string(password[pos1-1]) != char {
+			fmt.Println(line)
+			numValid++
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(numValid)
+}
+
 func main() {
 	Part1()
+	Part2()
 }
