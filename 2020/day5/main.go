@@ -57,6 +57,8 @@ func Part1() {
 		if id > max {
 			max = id
 		}
+
+		fmt.Println(id)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -67,9 +69,46 @@ func Part1() {
 }
 
 func Part2() {
+	wd, _ := os.Getwd()
+	file, err := os.Open(wd + "/day5/input.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	scanner := bufio.NewScanner(file)
+
+	seats := make(map[int]bool)
+	min := 999
+	max := 0
+	for scanner.Scan() {
+		id := getSeatID(scanner.Text())
+		seats[id] = true
+
+		if id > max {
+			max = id
+		}
+
+		if id < min {
+			min = id
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	for id := min; id < max; id++ {
+		_, a := seats[id - 1]
+		_, b := seats[id]
+		c, _ := seats[id + 1]
+		if a && !b && c {
+			fmt.Println(id)
+		}
+	}
 }
 
+
 func main() {
-	Part1()
+	//Part1()
 	Part2()
 }
