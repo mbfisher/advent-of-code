@@ -25,3 +25,13 @@ func TestFindShinyGold(t *testing.T) {
 		t.Errorf("got %d want %d", result, 4)
 	}
 }
+
+func TestSumShinyGold(t *testing.T) {
+	input := bufio.NewScanner(strings.NewReader(exampleInput))
+	bags := parseInput(input)
+	result := sumShinyGold(bags)
+
+	if result != 32 {
+		t.Errorf("got %d want %d", result, 32)
+	}
+}

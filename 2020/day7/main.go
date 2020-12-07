@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -13,6 +14,7 @@ type BagMap map[string]Bag
 
 type Bag struct {
 	Color    string
+	Count    int
 	Contains BagMap
 }
 
@@ -29,6 +31,7 @@ func parseInput(scanner *bufio.Scanner) BagMap {
 
 		bag := Bag{
 			Color:    color,
+			Count:    1,
 			Contains: make(map[string]Bag),
 		}
 		bags[color] = bag
@@ -48,6 +51,10 @@ func parseInput(scanner *bufio.Scanner) BagMap {
 		for _, inner := range contains {
 			color := strings.TrimSpace(inner[2])
 			innerBag := newBag(color)
+			count, _ := strconv.Atoi(inner[1])
+			// innerBag.Count is a copy of bags[color].Count, so updating it here is immutable
+			// innerBag.Contains is a reference to bags[color].Contains - we don't need to copy it
+			innerBag.Count = count
 			bag.Contains[color] = innerBag
 		}
 	}
@@ -56,21 +63,21 @@ func parseInput(scanner *bufio.Scanner) BagMap {
 }
 
 func checkBag(bag Bag, bags BagMap, result *map[string]bool) bool {
-	//if check, ok := (*result)[bag.Color]; ok {
-	//	return check
-	//}
+	if check, ok := (*result)[bag.Color]; ok {
+		return check
+	}
 
 	_, ok := bag.Contains["shiny gold"]
 
 	if ok {
-		//(*result)[bag.Color] = ok
+		(*result)[bag.Color] = ok
 		return true
 	}
 
 	for innerColor, _ := range bag.Contains {
 		innerBag := bags[innerColor]
 		check := checkBag(innerBag, bags, result)
-		//(*result)[innerColor] = check
+		(*result)[innerColor] = check
 		if check {
 			return true
 		}
@@ -99,6 +106,23 @@ func findShinyGold(bags BagMap) int {
 	return numBags
 }
 
+func sumBags (bag Bag) int {
+	if bag.Contains == nil {
+		return 1
+	}
+
+	result := 1
+	for _, innerBag := range bag.Contains {
+		innerSum := sumBags(innerBag)
+		result += innerSum * innerBag.Count
+	}
+	return result
+}
+
+func sumShinyGold(bags BagMap) int {
+	return sumBags(bags["shiny gold"]) - 1
+}
+
 func Part1() {
 	wd, _ := os.Getwd()
 	file, err := os.Open(wd + "/day7/input.txt")
@@ -118,10 +142,24 @@ func Part1() {
 }
 
 func Part2() {
+	wd, _ := os.Getwd()
+	file, err := os.Open(wd + "/day7/input.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	scanner := bufio.NewScanner(file)
+
+	bags := parseInput(scanner)
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(sumShinyGold(bags))
 }
 
 func main() {
-	Part1()
+	//Part1()
 	Part2()
 }
