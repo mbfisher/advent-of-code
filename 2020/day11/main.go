@@ -31,32 +31,59 @@ func stringify(seats [][]string) (result string) {
 	return
 }
 
-func doRound(seats [][]string) (next [][]string) {
+func doRound(seats [][]string, distance int, threshold int) (next [][]string) {
 	numRows := len(seats)
 	numCols := len(seats[0])
 
 	next = make([][]string, numRows)
 
+	directions := [][]int{
+		{-1, 0}, // N
+		{-1, 1}, // NE
+		{0, 1}, // E
+		{1, 1}, // SE
+		{1, 0}, // S
+		{1, -1}, // SW
+		{0, -1}, // W
+		{-1, -1}, // NW
+	}
+
 	visitAdjacent := func(row int, col int, visitor func(seat string) bool) {
-		for i := row - 1; i <= row + 1; i++ {
-			if i < 0 || i >= numRows {
+		for _, steps := range directions {
+			x := steps[0]
+			y := steps[1]
+
+			i := row
+			j := col
+
+			seat := "."
+			n := 0
+			for seat == "." {
+				n++
+				if distance > 0 && n > distance {
+					break
+				}
+
+				i += x
+				j += y
+
+				if i < 0 || i >= numRows {
+					break
+				}
+
+				if j < 0 || j >= numCols {
+					break
+				}
+
+				seat = seats[i][j]
+			}
+
+			if seat == "." {
 				continue
 			}
 
-			for j := col - 1; j <= col + 1; j++ {
-				if j < 0 || j >= numCols {
-					continue
-				}
-
-				if i == row && j == col {
-					continue
-				}
-
-				seat := seats[i][j]
-
-				if !visitor(seat) {
-					return
-				}
+			if !visitor(seat) {
+				return
 			}
 		}
 	}
@@ -81,10 +108,10 @@ func doRound(seats [][]string) (next [][]string) {
 				numOccupied++
 			}
 
-			return numOccupied < 4
+			return numOccupied < threshold
 		})
 
-		return numOccupied >= 4
+		return numOccupied >= threshold
 	}
 
 	for row := 0; row < numRows; row++ {
@@ -103,7 +130,7 @@ func doRound(seats [][]string) (next [][]string) {
 	return next
 }
 
-func countOccupied(scanner *bufio.Scanner) int {
+func countOccupied(scanner *bufio.Scanner, distance int, threshold int) int {
 	var seats [][]string
 
 	for scanner.Scan() {
@@ -125,7 +152,7 @@ func countOccupied(scanner *bufio.Scanner) int {
 		numRounds++
 		fmt.Printf("Round %d\n", numRounds)
 
-		next = doRound(next)
+		next = doRound(next, distance, threshold)
 		currentHash = stringify(next)
 	}
 
@@ -150,7 +177,7 @@ func Part1() int {
 	}
 
 	scanner := bufio.NewScanner(file)
-	result := countOccupied(scanner)
+	result := countOccupied(scanner, 1, 4)
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
@@ -167,8 +194,7 @@ func Part2() int {
 	}
 
 	scanner := bufio.NewScanner(file)
-
-	result := 0
+	result := countOccupied(scanner, -1, 5)
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
@@ -178,6 +204,6 @@ func Part2() int {
 }
 
 func main() {
-	fmt.Println(Part1())
-	//fmt.Println(Part2())
+	//fmt.Println(Part1())
+	fmt.Println(Part2())
 }
