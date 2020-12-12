@@ -9,8 +9,6 @@ import (
 	"strconv"
 )
 
-var heading = []string{"E", "S", "W", "N"}
-
 func getManhattanDistance(scanner *bufio.Scanner) int {
 	position := make([]int, 2)
 	movements := map[string][]int{
@@ -62,6 +60,57 @@ func getManhattanDistance(scanner *bufio.Scanner) int {
 	return int(math.Abs(float64(position[0])) + math.Abs(float64(position[1])))
 }
 
+func followWaypoint(scanner *bufio.Scanner) int {
+	position := []int{0, 0}
+	waypoint := []int{10, 1}
+
+	movements := map[string][]int{
+		"N": {0, 1},
+		"E": {1, 0},
+		"S": {0, -1},
+		"W": {-1, 0},
+	}
+
+	for scanner.Scan() {
+		instruction := scanner.Text()
+		action := string(instruction[0])
+		value, _ := strconv.Atoi(instruction[1:])
+
+		switch action {
+		case "N", "S", "E", "W":
+			waypoint[0] += movements[action][0] * value
+			waypoint[1] += movements[action][1] * value
+			break
+		case "F":
+			position[0] += waypoint[0] * value
+			position[1] += waypoint[1] * value
+			break
+		case "L", "R":
+			if action == "L" {
+				value *= -1
+			}
+
+			if value == 90 || value == -270 {
+				// R90(x, y) = (y, -x)
+				waypoint = []int{waypoint[1], waypoint[0] * -1}
+			}
+
+			if value == -90 || value == 270 {
+				// R-90(x, y) = (-y, x)
+				waypoint = []int{waypoint[1] * -1, waypoint[0]}
+			}
+
+			if value == 180 || value == -180 {
+				// R180(x, y) = (-x, -y)
+				waypoint = []int{waypoint[0] * -1, waypoint[1] * -1}
+			}
+			break
+		}
+	}
+
+	return int(math.Abs(float64(position[0])) + math.Abs(float64(position[1])))
+}
+
 func Part1() int {
 	wd, _ := os.Getwd()
 	file, err := os.Open(wd + "/day12/input.txt")
@@ -87,7 +136,7 @@ func Part2() int {
 	}
 
 	scanner := bufio.NewScanner(file)
-	result := 0
+	result := followWaypoint(scanner)
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
@@ -97,6 +146,6 @@ func Part2() int {
 }
 
 func main() {
-	fmt.Println(Part1())
-	//fmt.Println(Part2())
+	//fmt.Println(Part1())
+	fmt.Println(Part2())
 }
