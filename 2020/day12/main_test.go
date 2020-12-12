@@ -19,3 +19,11 @@ func TestGetManhattanDistance(t *testing.T) {
 		t.Fatalf("got %d want %d", result, 25)
 	}
 }
+
+func TestFollowWaypoint(t *testing.T) {
+	scanner := bufio.NewScanner(strings.NewReader(exampleInput))
+	result := followWaypoint(scanner)
+	if result != 286 {
+		t.Fatalf("got %d want %d", result, 286)
+	}
+}
