@@ -12,16 +12,17 @@ func TestFindEarliestBus(t *testing.T) {
 	}
 }
 
-x ≡ 0 (mod 7)
-x ≡ 1 (mod 13)
-x ≡ 4 (mod 59)
-x ≡ 6 (mod 31)
-x ≡ 7 (mod 19)
+//x ≡ 0 (mod 7)
+//x ≡ 1 (mod 13)
+//x ≡ 4 (mod 59)
+//x ≡ 6 (mod 31)
+//x ≡ 7 (mod 19)
 func TestFindWeirdTimestamp(t *testing.T) {
 	var tests = []struct{
 		input string
 		result int64
 	}{
+		{"\nx,3,x,x,5,x,7", 34},
 		{"\n7,13,x,x,59,x,31,19", 1068781},
 		{"\n67,7,59,61", 754018},
 		{"\n67,x,7,59,61", 779210},

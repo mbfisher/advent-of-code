@@ -62,7 +62,7 @@ func findWeirdTimestamp(input string) int64 {
 			continue
 		}
 		num, _ := strconv.Atoi(id)
-		buses[int64(i + 1)] = int64(num)
+		buses[int64(i)] = int64(num)
 	}
 
 	// https://brilliant.org/wiki/chinese-remainder-theorem/
@@ -73,13 +73,13 @@ func findWeirdTimestamp(input string) int64 {
 	}
 
 	result := int64(0)
-	for n, a := range buses {
+	for a, n := range buses {
 		y := N/n
 		z := mmi(y, n)
 		result += a * y * z
 	}
 
-	return result
+	return result % N
 }
 
 
