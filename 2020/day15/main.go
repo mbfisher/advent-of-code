@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -46,29 +43,17 @@ func nthSpoken(input string, n int) int {
 	return current
 }
 
+var input = "0,1,5,10,3,12,19"
+
 func Part1() int {
-	input := "0,1,5,10,3,12,19"
 	return nthSpoken(input, 2020)
 }
 
 func Part2() int {
-	wd, _ := os.Getwd()
-	file, err := os.Open(wd + "/day14/input.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	scanner := bufio.NewScanner(file)
-	result := 0
-
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
-
-	return result
+	return nthSpoken(input, 30000000)
 }
 
 func main() {
-	fmt.Println(Part1())
-	//fmt.Println(Part2())
+	//fmt.Println(Part1())
+	fmt.Println(Part2())
 }
