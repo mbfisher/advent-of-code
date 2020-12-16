@@ -11,8 +11,9 @@ import (
 )
 
 type Field struct {
-	Name string
-	ranges [][]int
+	Name     string
+	Position int
+	ranges   [][]int
 }
 
 func (f Field) Validate(value int) bool {
@@ -26,8 +27,8 @@ func (f Field) Validate(value int) bool {
 }
 
 type Input struct {
-	Fields []Field
-	MyTicket []int
+	Fields        []Field
+	MyTicket      []int
 	NearbyTickets [][]int
 }
 
@@ -44,6 +45,7 @@ func parseTicket(line string) []int {
 func parse(scanner *bufio.Scanner) Input {
 	lineType := "field"
 	fieldRangePattern := regexp.MustCompile("(\\d+)-(\\d+)")
+
 	input := Input{}
 
 	for scanner.Scan() {
@@ -66,7 +68,10 @@ func parse(scanner *bufio.Scanner) Input {
 		if lineType == "field" {
 			parts := strings.Split(line, ": ")
 			name := parts[0]
-			field := Field{Name: name}
+			field := Field{
+				Name:     name,
+				Position: -1,
+			}
 
 			match := fieldRangePattern.FindAllStringSubmatch(parts[1], -1)
 			for _, m := range match {
@@ -93,21 +98,95 @@ func parse(scanner *bufio.Scanner) Input {
 	return input
 }
 
+func getInvalidValues(ticket []int, input Input) []int {
+	var result []int
+
+	for _, value := range ticket {
+		valid := false
+		for _, field := range input.Fields {
+			if field.Validate(value) {
+				valid = true
+				break
+			}
+		}
+
+		if !valid {
+			result = append(result, value)
+		}
+	}
+
+	return result
+}
+
 func getTicketScanningErrorRate(input Input) int {
 	result := 0
 
 	for _, ticket := range input.NearbyTickets {
-		for _, value := range ticket {
-			valid := false
-			for _, field := range input.Fields {
-				if field.Validate(value) {
-					valid = true
-					break
+		for _, value := range getInvalidValues(ticket, input) {
+			result += value
+		}
+	}
+
+	return result
+}
+
+func getFieldPositions(input Input) map[string]int {
+	result := make(map[string]int)
+
+	found := true
+	iteration := 0
+	for len(result) < len(input.Fields) {
+		if !found {
+			log.Fatal("no positions found")
+		}
+
+		iteration++
+		fmt.Printf("iteration %d\n", iteration)
+		found = false
+
+		for _, field := range input.Fields {
+			var candidates []int
+
+			if _, ok := result[field.Name]; ok {
+				continue
+			}
+
+			var allValid bool
+
+			for i := 0; i < len(input.NearbyTickets[0]); i++ {
+				assigned := false
+				for _, position := range result {
+					if position == i {
+						assigned = true
+					}
+				}
+
+				if assigned {
+					continue
+				}
+
+				allValid = true
+
+				for _, ticket := range input.NearbyTickets {
+					value := ticket[i]
+					if !field.Validate(value) {
+						allValid = false
+						break
+					}
+				}
+
+				if allValid {
+					candidates = append(candidates, i)
 				}
 			}
 
-			if !valid {
-				result += value
+			fmt.Printf("found %d candidates for field %s: %v\n", len(candidates), field.Name, candidates)
+
+			if len(candidates) == 1 {
+				fmt.Printf("found position %d for field %s\n", candidates[0], field.Name)
+				result[field.Name] = candidates[0]
+				found = true
+				break
 			}
 		}
 	}
@@ -140,16 +219,37 @@ func Part2() int {
 	}
 
 	scanner := bufio.NewScanner(file)
-	result := 0
+	input := parse(scanner)
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
+	}
+
+	var validTickets [][]int
+
+	for _, ticket := range input.NearbyTickets {
+		if len(getInvalidValues(ticket, input)) == 0 {
+			validTickets = append(validTickets, ticket)
+		}
+	}
+
+	fmt.Printf("discarding %d of %d tickets\n", len(input.NearbyTickets)-len(validTickets), len(input.NearbyTickets))
+	input.NearbyTickets = validTickets
+	positions := getFieldPositions(input)
+
+	result := 1
+	for name, position := range positions {
+		if !strings.HasPrefix(name, "departure") {
+			continue
+		}
+
+		result *= input.MyTicket[position]
 	}
 
 	return result
 }
 
 func main() {
-	fmt.Println(Part1())
-	//fmt.Println(Part2())
+	//fmt.Println(Part1())
+	fmt.Println(Part2())
 }
