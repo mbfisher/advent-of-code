@@ -44,3 +44,29 @@ func TestGetTicketScanningErrorRate(t *testing.T) {
 		t.Fatalf("got %d, want 71", result)
 	}
 }
+
+func TestGetFieldPositions(t *testing.T) {
+	result := getFieldPositions(parse(bufio.NewScanner(strings.NewReader(`class: 0-1 or 4-19
+row: 0-5 or 8-19
+seat: 0-13 or 16-19
+
+your ticket:
+11,12,13
+
+nearby tickets:
+3,9,18
+15,1,5
+5,14,9`))))
+
+	if result["row"] != 0 {
+		t.Fatalf("got %d for row position, want 1", result["row"])
+	}
+
+	if result["class"] != 1 {
+		t.Fatalf("got %d for class position, want 1", result["class"])
+	}
+
+	if result["seat"] != 2 {
+		t.Fatalf("got %d for seat position, want 2", result["seat"])
+	}
+}
