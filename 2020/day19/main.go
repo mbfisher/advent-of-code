@@ -15,11 +15,23 @@ func Part1() int {
 	}
 
 	scanner := bufio.NewScanner(file)
-
 	result := 0
+
+	tree, messages := Parse(scanner)
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
+	}
+
+	validator := Validator{tree}
+
+	for _, message := range messages {
+		if validationResult := validator.Validate(message); validationResult.IsValid {
+			result++
+			fmt.Printf("%s: ✅\n", message)
+		} else {
+			fmt.Printf("%s: %s\n", message, validationResult.Message)
+		}
 	}
 
 	return result

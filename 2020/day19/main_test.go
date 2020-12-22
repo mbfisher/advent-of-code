@@ -15,8 +15,8 @@ func TestExample1(t *testing.T) {
 `
 
 	tree, _ := Parse(bufio.NewScanner(strings.NewReader(input)))
-
 	validator := Validator{tree}
+
 	var tests = []struct{
 		message string
 		result bool
@@ -41,7 +41,6 @@ func TestExample2(t *testing.T) {
 4: "a"
 5: "b"
 `
-
 	tree, _ := Parse(bufio.NewScanner(strings.NewReader(input)))
 
 	validator := Validator{tree}
@@ -55,6 +54,34 @@ func TestExample2(t *testing.T) {
 		{"abbbab", true},
 		{"aaabbb", false},
 		{"aaaabbb", false},
+		{"aaa", false},
+	}
+
+	for _, tt := range tests {
+		if result := validator.Validate(tt.message); result.IsValid != tt.result {
+			t.Fatalf("got %t want %t for %s: %s", result.IsValid, tt.result, tt.message, result.Message)
+		}
+	}
+}
+
+func TestExample3(t *testing.T) {
+	input := `0: 1 4
+1: "a"
+2: 1 3 | 3 1
+3: "b"
+4: 2 1 | 3 3`
+
+	tree, _ := Parse(bufio.NewScanner(strings.NewReader(input)))
+
+	validator := Validator{tree}
+
+	var tests = []struct{
+		message string
+		result bool
+	}{
+		{"aaba", true},
+		{"abaa", true},
+		{"abb", true},
 	}
 
 	for _, tt := range tests {

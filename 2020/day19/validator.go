@@ -15,9 +15,13 @@ func (v *Validator) Validate(message string) ValidationResult {
 	node := v.tree
 	for i, r := range message {
 		c := string(r)
-		//if len(node.Children) == 0 {
-		//	return false
-		//}
+
+		if len(node.Children) == 0 {
+			return ValidationResult{
+				IsValid: false,
+				Message: fmt.Sprintf("too long"),
+			}
+		}
 
 		if child, ok := node.Children[c]; ok {
 			node = child
@@ -26,6 +30,13 @@ func (v *Validator) Validate(message string) ValidationResult {
 				IsValid: false,
 				Message: fmt.Sprintf("invalid char %d %s", i, c),
 			}
+		}
+	}
+
+	if len(node.Children) > 0 {
+		return ValidationResult{
+			IsValid: false,
+			Message: "too short",
 		}
 	}
 
