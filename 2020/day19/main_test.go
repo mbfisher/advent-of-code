@@ -94,8 +94,185 @@ func TestExample3(t *testing.T) {
 	}
 }
 
+func TestExample4(t *testing.T) {
+	input := `0: 1 2
+1: "a"
+2: 1 3 | 3 2
+3: "b"`
+
+	tree, _ := Parse(bufio.NewScanner(strings.NewReader(input)))
+
+	validator := Validator{tree}
+
+	var tests = []struct{
+		message string
+		result bool
+	}{
+		{"aab", true},
+		{"abb", false},
+		{"abab", true},
+		{"abbbbbbab", true},
+		{"abbbbbb", false},
+	}
+
+	for _, tt := range tests {
+		if result := validator.Validate(tt.message); result.IsValid != tt.result {
+			t.Fatalf("got %t want %t for %s: %s", result.IsValid, tt.result, tt.message, result.Message)
+		} else {
+			t.Logf("got %t for %s", tt.result, tt.message)
+		}
+	}
+}
+
+func TestExample5(t *testing.T) {
+	input := `0: 1 2 1
+1: "a"
+2: 1 3 | 3 2
+3: "b"`
+
+	tree, _ := Parse(bufio.NewScanner(strings.NewReader(input)))
+
+	validator := Validator{tree}
+
+	var tests = []struct{
+		message string
+		result bool
+	}{
+		{"aaba", true},
+		{"abba", false},
+		{"ababa", true},
+		{"abbbbbbaba", true},
+		{"abbbbbba", false},
+	}
+
+	for _, tt := range tests {
+		if result := validator.Validate2(tt.message); result.IsValid != tt.result {
+			t.Fatalf("got %t want %t for %s: %s", result.IsValid, tt.result, tt.message, result.Message)
+		} else {
+			t.Logf("got %t for %s", tt.result, tt.message)
+		}
+	}
+}
+
+func TestExample6(t *testing.T) {
+	input := `0: 8 11
+1: "a"
+2: "b"
+10: 1 1 | 2 2
+8: 10 | 10 8
+11: 10 1 | 10 11 1`
+
+	tree, _ := Parse(bufio.NewScanner(strings.NewReader(input)))
+
+	validator := Validator{tree}
+
+	var tests = []struct{
+		message string
+		result bool
+	}{
+		{"aaba", true},
+		{"abba", false},
+		{"ababa", true},
+		{"abbbbbbaba", true},
+		{"abbbbbba", false},
+	}
+
+	for _, tt := range tests {
+		if result := validator.Validate(tt.message); result.IsValid != tt.result {
+			t.Fatalf("got %t want %t for %s: %s", result.IsValid, tt.result, tt.message, result.Message)
+		} else {
+			t.Logf("got %t for %s", tt.result, tt.message)
+		}
+	}
+}
+
 
 func TestPart2Example1(t *testing.T) {
+	input := `42: 9 14 | 10 1
+9: 14 27 | 1 26
+10: 23 14 | 28 1
+1: "a"
+11: 42 31
+5: 1 14 | 15 1
+19: 14 1 | 14 14
+12: 24 14 | 19 1
+16: 15 1 | 14 14
+31: 14 17 | 1 13
+6: 14 14 | 1 14
+2: 1 24 | 14 4
+0: 8 11
+13: 14 3 | 1 12
+15: 1 | 14
+17: 14 2 | 1 7
+23: 25 1 | 22 14
+28: 16 1
+4: 1 1
+20: 14 14 | 1 15
+3: 5 14 | 16 1
+27: 1 6 | 14 18
+14: "b"
+21: 14 1 | 1 14
+25: 1 1 | 1 14
+22: 14 14
+8: 42
+26: 14 22 | 1 20
+18: 15 15
+7: 14 5 | 1 21
+24: 14 1
+
+abbbbbabbbaaaababbaabbbbabababbbabbbbbbabaaaa
+bbabbbbaabaabba
+babbbbaabbbbbabbbbbbaabaaabaaa
+aaabbbbbbaaaabaababaabababbabaaabbababababaaa
+bbbbbbbaaaabbbbaaabbabaaa
+bbbababbbbaaaaaaaabbababaaababaabab
+ababaaaaaabaaab
+ababaaaaabbbaba
+baabbaaaabbaaaababbaababb
+abbbbabbbbaaaababbbbbbaaaababb
+aaaaabbaabaaaaababaa
+aaaabbaaaabbaaa
+aaaabbaabbaaaaaaabbbabbbaaabbaabaaa
+babaaabbbaaabaababbaabababaaab
+aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba`
+
+	tree, messages := Parse(bufio.NewScanner(strings.NewReader(input)))
+
+	validator := Validator{tree}
+
+	result := 0
+	for _, message := range messages {
+		if validationResult := validator.Validate(message); validationResult.IsValid {
+			result++
+			fmt.Printf("%s: ✅\n", message)
+		} else {
+			fmt.Printf("%s: %s\n", message, validationResult.Message)
+		}
+	}
+
+	if result != 3 {
+		t.Fatalf("got %d want 3", result)
+	}
+
+	//var tests = []struct{
+	//	message string
+	//	result bool
+	//}{
+	//	{"bbabbbbaabaabba", true},
+	//	{"ababaaaaaabaaab", true},
+	//	{"ababaaaaabbbaba", true},
+	//}
+	//
+	//for _, tt := range tests {
+	//	if result := validator.Validate(tt.message); result.IsValid != tt.result {
+	//		t.Fatalf("got %t want %t for %s: %s", result.IsValid, tt.result, tt.message, result.Message)
+	//	} else {
+	//		t.Logf("got %t for %s", tt.result, tt.message)
+	//	}
+	//}
+}
+
+func TestPart2ExampleRecursive(t *testing.T) {
 	input := `42: 9 14 | 10 1
 9: 14 27 | 1 26
 10: 23 14 | 28 1
@@ -158,8 +335,8 @@ aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba`
 		}
 	}
 
-	if result != 3 {
-		t.Fatalf("got %d want 3", result)
+	if result != 12 {
+		t.Fatalf("got %d want 12", result)
 	}
 
 	//var tests = []struct{

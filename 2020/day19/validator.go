@@ -11,24 +11,51 @@ type ValidationResult struct {
 	Message string
 }
 
-func (v *Validator) Validate(message string) ValidationResult {
+func (v *Validator) Validate(message string) (result ValidationResult) {
 	node := v.tree
 	for i, r := range message {
 		c := string(r)
 
 		if len(node.Children) == 0 {
-			return ValidationResult{
-				IsValid: false,
-				Message: fmt.Sprintf("too long"),
+			if node.Recurse != nil {
+				node = node.Recurse
+				if child, ok := node.Children[c]; ok {
+					node = child
+					continue
+				} else {
+					return ValidationResult{
+						IsValid: false,
+						Message: fmt.Sprintf("invalid char %d %s", i, c),
+					}
+				}
+			} else {
+				return ValidationResult{
+					IsValid: false,
+					Message: fmt.Sprintf("too long"),
+				}
 			}
 		}
 
 		if child, ok := node.Children[c]; ok {
 			node = child
+			continue
 		} else {
-			return ValidationResult{
-				IsValid: false,
-				Message: fmt.Sprintf("invalid char %d %s", i, c),
+			if node.Recurse != nil {
+				node = node.Recurse
+				if child, ok := node.Children[c]; ok {
+					node = child
+					continue
+				} else {
+					return ValidationResult{
+						IsValid: false,
+						Message: fmt.Sprintf("invalid char %d %s", i, c),
+					}
+				}
+			} else {
+				return ValidationResult{
+					IsValid: false,
+					Message: fmt.Sprintf("invalid char %d %s", i, c),
+				}
 			}
 		}
 	}
@@ -37,6 +64,13 @@ func (v *Validator) Validate(message string) ValidationResult {
 		return ValidationResult{
 			IsValid: false,
 			Message: "too short",
+		}
+	}
+	
+	if node.Recurse != nil {
+		return ValidationResult{
+			IsValid: false,
+			Message: "ended mid-cycle",
 		}
 	}
 

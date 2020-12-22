@@ -101,23 +101,18 @@ func Parse(scanner *bufio.Scanner) (*Node, []string) {
 				for _, ref := range refs {
 					if ref == num {
 						for _, leaf := range leaves {
-							for key, child := range node.Children {
-								leaf.AddChild(key, child)
-							}
+							leaf.Recurse = node
 						}
 						continue
 					}
 
-					refNode := ruleTrees[ref]
-
-
+					refNode, _ := ruleTrees[ref].Clone()
 
 					var nextLeaves []*Node
 					for key, child := range refNode.Children {
 						for _, leaf := range leaves {
-							//cloned, _ := child.Clone()
-							//leaf.AddChild(key, cloned)
 							leaf.AddChild(key, child)
+							// leaf.AddChild(key, child)
 							nextLeaves = append(nextLeaves, leaf.Leaves()...)
 						}
 					}
