@@ -81,7 +81,7 @@ func Parse(scanner *bufio.Scanner) (*Node, []string) {
 
 			canProcess := true
 			for _, ref := range references {
-				if _, ok := ruleTrees[ref]; !ok {
+				if _, ok := ruleTrees[ref]; !ok && ref != num {
 					// we have a row depending on a rule we haven't processed yet
 					canProcess = false
 					break
@@ -92,20 +92,32 @@ func Parse(scanner *bufio.Scanner) (*Node, []string) {
 				continue
 			}
 
-			subNodes := make([]*Node, len(subrules))
-			for i, subrule := range subrules {
+			node := NewNode()
+			for _, subrule := range subrules {
 				subNode := NewNode()
 				refs := strings.Split(subrule, " ")
 
 				leaves := []*Node{subNode}
 				for _, ref := range refs {
+					if ref == num {
+						for _, leaf := range leaves {
+							for key, child := range node.Children {
+								leaf.AddChild(key, child)
+							}
+						}
+						continue
+					}
+
 					refNode := ruleTrees[ref]
+
+
 
 					var nextLeaves []*Node
 					for key, child := range refNode.Children {
 						for _, leaf := range leaves {
-							cloned, _ := child.Clone()
-							leaf.AddChild(key, cloned)
+							//cloned, _ := child.Clone()
+							//leaf.AddChild(key, cloned)
+							leaf.AddChild(key, child)
 							nextLeaves = append(nextLeaves, leaf.Leaves()...)
 						}
 					}
@@ -113,11 +125,10 @@ func Parse(scanner *bufio.Scanner) (*Node, []string) {
 					leaves = nextLeaves
 				}
 
-				subNodes[i] = subNode
+				MergeNodes(node, subNode)
 			}
 
-			ruleTrees[num] = NewNode()
-			MergeNodes(ruleTrees[num], subNodes...)
+			ruleTrees[num] = node
 		}
 	}
 
