@@ -20,7 +20,7 @@ var literalRegex = regexp.MustCompile("\"(\\w)\"")
  * Leaves: [d, e]
  */
 type RuleTree struct {
-	Root *Node
+	Root   *Node
 	Leaves []*Node
 }
 
@@ -66,7 +66,7 @@ func Parse(scanner *bufio.Scanner) (*Node, []string) {
 				// }
 				root := NewNode()
 				ruleTrees[num] = RuleTree{
-					Root: root,
+					Root:   root,
 					Leaves: []*Node{root.AddEdge(match[1])},
 				}
 				continue
@@ -80,7 +80,6 @@ func Parse(scanner *bufio.Scanner) (*Node, []string) {
 			for _, subrule := range subrules {
 				references = append(references, strings.Split(subrule, " ")...)
 			}
-
 
 			canProcess := true
 			for _, ref := range references {
@@ -100,36 +99,37 @@ func Parse(scanner *bufio.Scanner) (*Node, []string) {
 			tree := RuleTree{Root: NewNode()}
 			for _, subrule := range subrules {
 				refs := strings.Split(subrule, " ")
-				firstTree, ok := ruleTrees[refs[0]]
-				if !ok {
-					panic("first tree not OK")
-				}
 
-				var firstTreeLeaves []*Node
-				for key, child := range firstTree.Root.Children {
-					var cloned *Node
-					// We don't use firstTree.Leaves here because we need a copy of them
-					// Clone() returns the root and leaves
-					cloned, nextLeaves := child.Clone()
-					tree.Root.AddChild(key, cloned)
-					firstTreeLeaves = append(firstTreeLeaves, nextLeaves...)
-				}
+				var refTreeLeaves []*Node
 
-				secondTree, ok := ruleTrees[refs[1]]
-				if !ok {
-					panic("second tree not OK")
-				}
+				for i, ref := range refs {
+					refTree := ruleTrees[ref]
 
-				var secondTreeLeaves []*Node
-				for key, child := range secondTree.Root.Children {
-					for _, leaf := range firstTreeLeaves {
-						cloned, nextLeaves := child.Clone()
-						leaf.AddChild(key, cloned)
-						secondTreeLeaves = append(secondTreeLeaves, nextLeaves...)
+					if i == 0 {
+						for key, child := range refTree.Root.Children {
+							// We don't use firstTree.Leaves here because we need a copy of them
+							// Clone() returns the root and leaves
+							cloned, nextLeaves := child.Clone()
+							tree.Root.AddChild(key, cloned)
+							refTreeLeaves = append(refTreeLeaves, nextLeaves...)
+						}
+						
+						continue
 					}
+					
+					var nextRefTreeLeaves []*Node
+					for key, child := range refTree.Root.Children {
+						for _, leaf := range refTreeLeaves {
+							cloned, childLeaves := child.Clone()
+							leaf.AddChild(key, cloned)
+							nextRefTreeLeaves = append(nextRefTreeLeaves, childLeaves...)
+						}
+					}
+
+					refTreeLeaves = nextRefTreeLeaves
 				}
 
-				tree.Leaves = append(tree.Leaves, secondTreeLeaves...)
+				tree.Leaves = append(tree.Leaves, refTreeLeaves...)
 			}
 
 			ruleTrees[num] = tree
