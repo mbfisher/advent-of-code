@@ -29,6 +29,12 @@ func (n *Node) AddEdge(value string) *Node {
 }
 
 func (n *Node) AddChild(value string, node *Node) *Node {
-	n.Children[value] = node
+	if existing, ok := n.Children[value]; ok {
+		for key, newChild := range node.Children {
+			existing.AddChild(key, newChild)
+		}
+	} else {
+		n.Children[value] = node
+	}
 	return node
 }
