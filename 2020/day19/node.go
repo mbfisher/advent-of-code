@@ -2,6 +2,7 @@ package main
 
 type Node struct {
 	Children map[string]*Node
+	Recurse  *Node
 }
 
 func NewNode() *Node {
@@ -9,19 +10,32 @@ func NewNode() *Node {
 }
 
 func (n *Node) Clone() (root *Node, leaves []*Node) {
-	root = NewNode()
+	return n.cloneFromRoot(make(map[*Node]*Node))
+}
+
+func (n *Node) cloneFromRoot(cloned map[*Node]*Node) (node *Node, leaves []*Node) {
+	node = NewNode()
+	cloned[n] = node
+
+	if n.Recurse != nil {
+		if cl, ok := cloned[n.Recurse]; ok {
+			node.Recurse = cl
+		} else {
+			node.Recurse = n.Recurse
+		}
+	}
 
 	for k, v := range n.Children {
-		child, cl := v.Clone()
-		root.Children[k] = child
+		child, cl := v.cloneFromRoot(cloned)
+		node.Children[k] = child
 		leaves = append(leaves, cl...)
 	}
 
-	if len(root.Children) == 0 {
-		leaves = []*Node{root}
+	if len(node.Children) == 0 {
+		leaves = []*Node{node}
 	}
 
-	return
+	return node, leaves
 }
 
 func (n *Node) AddEdge(value string) *Node {
@@ -30,6 +44,14 @@ func (n *Node) AddEdge(value string) *Node {
 
 func MergeNodes(dest *Node, srcs ...*Node) {
 	for _, src := range srcs {
+		if src.Recurse != nil {
+			if dest.Recurse != nil {
+				panic("cant overwrite Recurse")
+			}
+
+			dest.Recurse = src.Recurse
+		}
+
 		for key, child := range src.Children {
 			if existing, ok := dest.Children[key]; ok {
 				MergeNodes(existing, child)
@@ -47,7 +69,7 @@ func (n *Node) AddChild(value string, node *Node) *Node {
 
 func (n *Node) Leaves() (result []*Node) {
 	for _, child := range n.Children {
-		if len(child.Children) == 0 {
+		if len(child.Children) == 0 { // && child.Recurse == nil {
 			result = append(result, child)
 		} else {
 			result = append(result, child.Leaves()...)
