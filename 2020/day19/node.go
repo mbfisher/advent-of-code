@@ -28,13 +28,31 @@ func (n *Node) AddEdge(value string) *Node {
 	return n.AddChild(value, NewNode())
 }
 
-func (n *Node) AddChild(value string, node *Node) *Node {
-	if existing, ok := n.Children[value]; ok {
-		for key, newChild := range node.Children {
-			existing.AddChild(key, newChild)
+func MergeNodes(dest *Node, srcs ...*Node) {
+	for _, src := range srcs {
+		for key, child := range src.Children {
+			if existing, ok := dest.Children[key]; ok {
+				MergeNodes(existing, child)
+			} else {
+				dest.Children[key] = child
+			}
 		}
-	} else {
-		n.Children[value] = node
 	}
+}
+
+func (n *Node) AddChild(value string, node *Node) *Node {
+	n.Children[value] = node
 	return node
+}
+
+func (n *Node) Leaves() (result []*Node) {
+	for _, child := range n.Children {
+		if len(child.Children) == 0 {
+			result = append(result, child)
+		} else {
+			result = append(result, child.Leaves()...)
+		}
+	}
+
+	return
 }

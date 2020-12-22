@@ -43,7 +43,7 @@ func Parse(scanner *bufio.Scanner) (*Node, []string) {
 		}
 	}
 
-	ruleTrees := make(map[string]RuleTree)
+	ruleTrees := make(map[string]*Node)
 
 	// keep looping whilst we've not built all the rows into nodes
 	for len(ruleTrees) != len(rows) {
@@ -64,11 +64,9 @@ func Parse(scanner *bufio.Scanner) (*Node, []string) {
 				//     }
 				//   }
 				// }
-				root := NewNode()
-				ruleTrees[num] = RuleTree{
-					Root:   root,
-					Leaves: []*Node{root.AddEdge(match[1])},
-				}
+				literalNode := NewNode()
+				literalNode.AddEdge(match[1])
+				ruleTrees[num] = literalNode
 				continue
 			}
 
@@ -94,47 +92,34 @@ func Parse(scanner *bufio.Scanner) (*Node, []string) {
 				continue
 			}
 
-			// we make a singe tree
-			// when len(subrules) > 1 e.g. "1 3 | 3 1"
-			tree := RuleTree{Root: NewNode()}
-			for _, subrule := range subrules {
+			subNodes := make([]*Node, len(subrules))
+			for i, subrule := range subrules {
+				subNode := NewNode()
 				refs := strings.Split(subrule, " ")
 
-				var refTreeLeaves []*Node
+				leaves := []*Node{subNode}
+				for _, ref := range refs {
+					refNode := ruleTrees[ref]
 
-				for i, ref := range refs {
-					refTree := ruleTrees[ref]
-
-					if i == 0 {
-						for key, child := range refTree.Root.Children {
-							// We don't use firstTree.Leaves here because we need a copy of them
-							// Clone() returns the root and leaves
-							cloned, nextLeaves := child.Clone()
-							tree.Root.AddChild(key, cloned)
-							refTreeLeaves = append(refTreeLeaves, nextLeaves...)
-						}
-						
-						continue
-					}
-					
-					var nextRefTreeLeaves []*Node
-					for key, child := range refTree.Root.Children {
-						for _, leaf := range refTreeLeaves {
-							cloned, childLeaves := child.Clone()
+					var nextLeaves []*Node
+					for key, child := range refNode.Children {
+						for _, leaf := range leaves {
+							cloned, _ := child.Clone()
 							leaf.AddChild(key, cloned)
-							nextRefTreeLeaves = append(nextRefTreeLeaves, childLeaves...)
+							nextLeaves = append(nextLeaves, leaf.Leaves()...)
 						}
 					}
 
-					refTreeLeaves = nextRefTreeLeaves
+					leaves = nextLeaves
 				}
 
-				tree.Leaves = append(tree.Leaves, refTreeLeaves...)
+				subNodes[i] = subNode
 			}
 
-			ruleTrees[num] = tree
+			ruleTrees[num] = NewNode()
+			MergeNodes(ruleTrees[num], subNodes...)
 		}
 	}
 
-	return ruleTrees["0"].Root, messages
+	return ruleTrees["0"], messages
 }
