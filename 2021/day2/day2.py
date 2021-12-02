@@ -20,7 +20,22 @@ def part1(input: str) -> int:
 
 
 def part2(input: str) -> int:
-    pass
+    position = 0
+    depth = 0
+    aim = 0
+
+    for instruction in input.split("\n"):
+        direction, magnitude = instruction.split(" ")
+
+        if direction == "forward":
+            position += int(magnitude)
+            depth += int(magnitude) * aim
+        if direction == "up":
+            aim -= int(magnitude)
+        if direction == "down":
+            aim += int(magnitude)
+
+    return position * depth
 
 
 if __name__ == '__main__':
@@ -36,5 +51,5 @@ if __name__ == '__main__':
     assert part1(example) == 150
     print(part1(Path('./input.txt').read_text()))
 
-    # assert part2(example) == 5
-    # print(part2(Path('./input.txt').read_text()))
+    assert part2(example) == 900
+    print(part2(Path('./input.txt').read_text()))
