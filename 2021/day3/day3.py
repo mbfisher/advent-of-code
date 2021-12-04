@@ -24,11 +24,35 @@ def part1(input: str) -> int:
     return int(gamma, 2) * int(epsilon, 2)
 
 
+def most_common_bit(numbers: "list[str]", position: int) -> str:
+    counts = {'0': 0, '1': 0}
 
+    for number in numbers:
+        counts[number[position]] += 1
+
+    return '0' if counts['0'] > counts['1'] else '1'
 
 
 def part2(input: str) -> int:
-    return 0
+    numbers = input.split("\n")
+    o2 = numbers
+
+    for i in range(0, len(numbers[0])):
+        common = most_common_bit(o2, i)
+        o2 = [c for c in o2 if c[i] == common]
+
+        if len(o2) == 1:
+            break
+
+    co2 = numbers
+    for i in range(0, len(numbers[0])):
+        common = most_common_bit(co2, i)
+        co2 = [c for c in co2 if c[i] != common]
+
+        if len(co2) == 1:
+            break
+
+    return int(o2[0], 2) * int(co2[0], 2)
 
 
 if __name__ == '__main__':
@@ -50,5 +74,5 @@ if __name__ == '__main__':
     assert part1(example) == 198
     print(part1(Path('./input.txt').read_text()))
 
-    # assert part2(example) == 900
-    # print(part2(Path('./input.txt').read_text()))
+    assert part2(example) == 230
+    print(part2(Path('./input.txt').read_text()))
