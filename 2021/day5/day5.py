@@ -74,7 +74,43 @@ def part1(input: str) -> int:
 
 
 def part2(input: str) -> int:
-    return 0
+    lines: List[Line] = []
+
+    for input_line in input.splitlines():
+        start, end = input_line.split(" -> ")
+        lines.append(Line(start=Point(coords=start), end=Point(coords=end)))
+
+    points: Dict[str, int] = {}
+
+    for line in lines:
+        delta: Tuple[int, int]
+
+        dy = line.start.y - line.end.y
+        dx = line.start.x - line.end.x
+        gradient = float(dy) / float(dx) if dx != 0 else 0
+
+        if dx == 0:
+            delta = (0, 1 if line.end.y > line.start.y else -1)
+        elif gradient == 0:
+            delta = (1 if line.end.x > line.start.x else -1, 0)
+        else:
+            delta = (1 if line.end.x > line.start.x else -1, 1 if line.end.y > line.start.y else -1)
+
+        print(line, dx, dy, gradient, delta)
+
+        if str(line.start) not in points:
+            points[str(line.start)] = 0
+        points[str(line.start)] += 1
+
+        point = line.start
+        while point != line.end:
+            point = point + delta
+
+            if str(point) not in points:
+                points[str(point)] = 0
+            points[str(point)] += 1
+
+    return len([point for point, count in points.items() if count >= 2])
 
 
 if __name__ == '__main__':
@@ -97,6 +133,6 @@ if __name__ == '__main__':
     assert example_part1 == 5, f"got {example_part1}"
     print(part1(input))
 
-    # example_part2 = part2(example)
-    # assert example_part2 == 1924, f"got {example_part2}"
-    # print(part2(input))
+    example_part2 = part2(example)
+    assert example_part2 == 12, f"got {example_part2}"
+    print(part2(input))
