@@ -8,10 +8,11 @@ class Chamber:
 
     def __init__(self, debug=False):
         self.debug = debug
-        self.occupied = set()
+        self.columns = {i: set() for i in range(7)}
+        self.heights = {i: 0 for i in range(7)}
 
     def tower_height(self):
-        return max(y for (_, y) in self.occupied) + 1 if len(self.occupied) > 0 else 0
+        return max(self.heights.values())
 
     def new_rock(self, rock_type) -> 'Rock':
         self.falling_rock = {
@@ -41,7 +42,7 @@ class Chamber:
                 if x == -1 or x == 7:
                     line.append("|")
 
-                elif (x, y) in self.occupied:
+                elif y in self.columns[x]:
                     line.append("#")
 
                 elif (x, y) in self.falling_rock.position:
@@ -77,7 +78,11 @@ class Rock:
         return any(map(lambda p: p[1] < 0, next_position))
 
     def is_into_rock(self, next_position):
-        return len(self.chamber.occupied.intersection(next_position)) > 0
+        for x, y in next_position:
+            if y in self.chamber.columns[x]:
+                return True
+
+        return False
 
     def left(self):
         next_position = {(x - 1, y) for x, y in self.position}
@@ -101,7 +106,10 @@ class Rock:
         if not self.is_into_floor(next_position) and not self.is_into_rock(next_position):
             self.position = next_position
         else:
-            self.chamber.occupied.update(self.position)
+            for x, y in self.position:
+                self.chamber.columns[x].add(y)
+                if y + 1 > self.chamber.heights[x]:
+                    self.chamber.heights[x] = y + 1
             self.landed = True
 
         self.chamber.print(label="down")
@@ -171,22 +179,25 @@ def part1(input: str) -> int:
 
 
 def part2(input: str) -> int:
-    jets = deque(input)
-    rocks = deque(["minus", "plus", "L", "I", "box"])
+    jets = list(input)
+    jet_index = 0
+    rocks = ["minus", "plus", "L", "I", "box"]
     chamber = Chamber()
+    states = {}
+    cycle_found = False
+    height_increase = 0
 
-    for i in range(1000000000000):
-        if i % 1000 == 0:
-            print(i)
-
-        rock_type = rocks.popleft()
-        rocks.append(rock_type)
-
+    rock_count = 0
+    while rock_count < 1000000000000:
+        rock_count += 1
+        rock_type = rocks[(rock_count - 1) % 5]
         rock = chamber.new_rock(rock_type)
 
         while not rock.landed:
-            jet = jets.popleft()
-            jets.append(jet)
+            jet = jets[jet_index]
+            jet_index += 1
+            if jet_index >= len(jets):
+                jet_index = 0
 
             if jet == ">":
                 rock.right()
@@ -197,20 +208,41 @@ def part2(input: str) -> int:
 
             rock.down()
 
-        height = chamber.tower_height()
-        if height % 2 > 0:
+        if cycle_found:
             continue
 
-        halves = (
-            {(x, y) for x, y in chamber.occupied if y < height//2},
-            {(x, y-height//2) for x, y in chamber.occupied if y >= height//2},
-        )
+        height = chamber.tower_height()
 
-        if halves[0] == halves[1]:
-            print("cycle!")
-            return
+        state_key = []
 
-    return chamber.tower_height()
+        min_column = min(h for h in chamber.heights.values() if h > 0)
+        for column_height in chamber.heights.values():
+            state_key.append(column_height - min_column if column_height > 0 else -1)
+
+        state_key.extend([rock_type, jet_index])
+        state_key = tuple(state_key)
+
+        if state_key in states:
+            print("cycle!", rock_count)
+            cycle_found = True
+
+            prev_state = states[state_key]
+
+            cycle_rock_count = rock_count - prev_state["rock_count"]
+            cycle_height = height - prev_state["height"]
+
+            rocks_remaining = 1000000000000 - rock_count
+            cycles_remaining = rocks_remaining // cycle_rock_count
+
+            rock_count += cycles_remaining * cycle_rock_count
+            height_increase = cycle_height * cycles_remaining
+        else:
+            states[state_key] = {
+                'rock_count': rock_count,
+                'height': height
+            }
+
+    return chamber.tower_height() + height_increase
 
 
 class Test(unittest.TestCase):
@@ -223,7 +255,7 @@ class Test(unittest.TestCase):
     def test_part_2(self):
         self.assertEqual(1514285714288, part2(Test.example))
 
-        # print(part2(Path('./input.txt').read_text()))
+        print(part2(Path('./input.txt').read_text()))
 
     example = """
 >>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>
