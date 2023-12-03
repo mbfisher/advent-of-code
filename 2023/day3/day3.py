@@ -67,8 +67,59 @@ def part1(input: str) -> int:
 
     return result
 
+
 def part2(input: str) -> int:
-    pass
+    schematic = input.split("\n")
+    result = 0
+    visited = set()
+
+    for r in range(len(schematic)):
+        row = schematic[r]
+        for c in range(len(row)):
+            if schematic[r][c] != "*":
+                continue
+
+            gear_ratio = 1
+            part_numbers = 0
+
+            for move in DIRECTIONS:
+                dr, dc = r + move[0], c + move[1]
+
+                if dr < 0 or dr > len(schematic) - 1 or dc < 0 or dc > len(row) - 1:
+                    continue
+
+                if (dr, dc) in visited:
+                    continue
+
+                if schematic[dr][dc] in NUMBERS:
+                    nrow = schematic[dr]
+                    nr, nc = dr, dc
+                    number = nrow[nc]
+
+                    while nc >= 0:
+                        nc -= 1
+                        if nrow[nc] in NUMBERS:
+                            number = nrow[nc] + number
+                            visited.add((nr, nc))
+                        else:
+                            break
+
+                    nc = dc
+                    while nc < len(nrow) - 1:
+                        nc += 1
+                        if nrow[nc] in NUMBERS:
+                            number = number + nrow[nc]
+                            visited.add((nr, nc))
+                        else:
+                            break
+
+                    gear_ratio *= int(number)
+                    part_numbers += 1
+
+            if part_numbers == 2:
+                result += gear_ratio
+
+    return result
 
 
 class Test(unittest.TestCase):
@@ -91,6 +142,6 @@ class Test(unittest.TestCase):
         print(part1(Path('./input.txt').read_text()))
 
     def test_part_2(self):
-        self.assertEqual(2286, part2(Test.example1))
+        self.assertEqual(467835, part2(Test.example1))
 
         print(part2(Path('./input.txt').read_text()))
