@@ -1,26 +1,21 @@
-import logging
-import multiprocessing
 import time
 import unittest
-from multiprocessing import Pool, Manager, Value, Process
+from collections import deque
 from pathlib import Path
-from typing import Dict, List, Tuple, TypedDict
+from typing import Dict, List, Tuple
+
+Range = Tuple[int, int, int]
 
 
 class Map:
-    class Range(TypedDict):
-        source: int
-        dest: int
-        len: int
-
     def __init__(self, name: str, ranges: List[Range]):
         self.name = name
-        self.ranges = sorted(ranges, key=lambda r: r['dest'])
+        self.ranges = sorted(ranges, key=lambda r: r[1])
         self.example = list(map(lambda i: self.get(i), range(100)))
 
     def get(self, value):
         for rang in self.ranges:
-            dest_range_start, source_range_start, range_len = rang['dest'], rang['source'], rang['len']
+            dest_range_start, source_range_start, range_len = rang
 
             if value < source_range_start:
                 continue
@@ -31,6 +26,53 @@ class Map:
             return dest_range_start + value - source_range_start
 
         return value
+
+    def get_range(self, rang):
+        queue = deque([rang])
+        result = []
+
+        while bool(queue):
+            source_start, source_len = queue.popleft()
+            source_end = source_start + source_len - 1
+
+            if all(source_start > dest_start + range_len for (dest_start, _, range_len) in self.ranges):
+                result.append((source_start, source_len))
+                continue
+
+            if all(source_end < dest_start for (dest_start, _, range_len) in self.ranges):
+                result.append((source_start, source_len))
+                continue
+
+            for (map_dest_start, map_source_start, map_len) in self.ranges:
+                map_source_end = map_source_start + map_len - 1
+                map_dest_end = map_dest_start + map_len - 1
+
+                # hangs over the left
+                if source_start < map_source_start <= source_end <= map_source_end:
+                    subrange = (
+                        source_start,
+                        map_source_start - source_start
+                    )
+                    result.append(subrange)
+                    queue.append((subrange[0] + subrange[1], subrange[1]))
+                    break
+
+                # fully contained
+                if source_start >= map_source_start and source_end <= map_source_end:
+                    result.append((map_dest_start + source_start - map_source_start, source_len))
+                    break
+
+                # hangs over the right
+                if map_source_start <= source_start <= map_source_end:
+                    subrange = (
+                        map_dest_start + source_start - map_source_start,
+                        min(source_len, map_source_end - source_start)
+                    )
+                    result.append(subrange)
+                    queue.append((map_source_end + 1, subrange[1]))
+                    break
+
+        return result
 
     def __str__(self):
         return f"<Map {self.name}>"
@@ -45,7 +87,7 @@ def parse(input: str) -> (List[int], Dict[str, Map]):
 
     maps: List[Map] = []
     map_name: str = ""
-    map_ranges: List[Map.Range] = []
+    map_ranges: List[Range] = []
     for line in lines:
         if line == "":
             maps.append(Map(map_name, map_ranges))
@@ -58,7 +100,7 @@ def parse(input: str) -> (List[int], Dict[str, Map]):
             continue
 
         dest_range_start, source_range_start, range_len = tuple(map(int, filter(len, line.split(" "))))
-        map_ranges.append(Map.Range(source=source_range_start, dest=dest_range_start, len=range_len))
+        map_ranges.append((dest_range_start, source_range_start, range_len))
 
     maps.append(Map(map_name, map_ranges))
 
@@ -105,92 +147,31 @@ def optimise_seed_ranges(seed_ranges: List[Tuple[int, int]]) -> List[Tuple[int, 
     return optimised_ranges
 
 
-Range = Tuple[int, int, int]
+def part2(input: str) -> int:
+    seeds, maps = parse(input)
+    seed_ranges = list((seeds[i], seeds[i + 1]) for i in range(0, len(seeds), 2))
 
+    result = float('inf')
 
-def get_location(seed_range_start, seed_range_len, maps: List[List[Range]], progress: Value):
-    result = float('Inf')
-    count = 0
-    for seed in range(seed_range_start, seed_range_start + seed_range_len):
-        value = seed
+    for seed_range in seed_ranges:
+        queue = [seed_range]
         for map in maps:
-            for rang in map:
-                dest_range_start, source_range_start, range_len = rang
+            # print(map.name, queue)
+            next_queue = []
+            for rang in queue:
+                for next_range in map.get_range(rang):
+                    next_queue.append(next_range)
 
-                if value < source_range_start:
-                    continue
+            queue = next_queue.copy()
 
-                if value >= source_range_start + range_len:
-                    continue
+        if not queue:
+            continue
 
-                value = dest_range_start + value - source_range_start
-                break
-
-        if value < result:
-            result = value
-
-        count += 1
-        if count % 1000 == 0:
-            progress.value = progress.value + 1
+        min_location = min(r[0] for r in queue)
+        if min_location < result:
+            result = min_location
 
     return result
-
-def log_progress(progress: Value, total: int):
-    while True:
-        print("progress", progress.value, total, round(progress.value / total * 100, 1))
-        time.sleep(1)
-
-
-def part2(input: str) -> int:
-    lines = list(input.split("\n"))
-
-    seeds_line = lines.pop(0)
-    seed_ranges = list(map(int, seeds_line[7:].split(" ")))
-    seed_ranges = list((seed_ranges[i], seed_ranges[i + 1]) for i in range(0, len(seed_ranges), 2))
-    lines.pop(0)
-
-    total_seeds_before_optimisation = sum(r[1] for r in seed_ranges)
-    print(total_seeds_before_optimisation, "seeds in", len(seed_ranges), "ranges before optimisation")
-    optimised_ranges = optimise_seed_ranges(seed_ranges)
-    total_seeds = sum(r[1] for r in optimised_ranges)
-    print(total_seeds, "seeds in", len(optimised_ranges), "ranges after optimisation")
-    print("optimisation removed", round((total_seeds_before_optimisation - total_seeds) / total_seeds, 0), "% of seeds")
-
-    logger = multiprocessing.log_to_stderr()
-    logger.setLevel(logging.INFO)
-
-    with Manager() as manager:
-        maps: List[List[Range]] = []
-
-        map_ranges: List[Range] = []
-        for line in lines:
-            if line == "":
-                maps.append(map_ranges)
-                map_ranges = []
-                continue
-
-            if "map" in line:
-                continue
-
-            dest_range_start, source_range_start, range_len = tuple(map(int, filter(len, line.split(" "))))
-            map_ranges.append((dest_range_start, source_range_start, range_len))
-
-        maps.append(map_ranges)
-
-        progress = manager.Value('i', 0)
-        p = Process(target=log_progress, args=(progress, total_seeds))
-        p.start()
-
-        with Pool(max(len(optimised_ranges), 8)) as pool:
-            locations = pool.starmap(get_location, [(seed_range_start, seed_range_len, maps, progress) for
-                                        (seed_range_start, seed_range_len) in optimised_ranges])
-
-        p.terminate()
-        p.join()
-
-        print("progress", progress.value)
-
-        return min(locations)
 
 
 class Test(unittest.TestCase):
@@ -211,6 +192,11 @@ class Test(unittest.TestCase):
             optimise_seed_ranges([(5, 5), (1, 7), (60, 20), (8, 6), (20, 3), (2, 3), (70, 56)])
         )
 
-        # self.assertEqual(46, part2(Path('./example1.txt').read_text()))
+        self.assertEqual(46, part2(Path('./example1.txt').read_text()))
 
-        # print(part2(Path('./input.txt').read_text()))
+        print(part2(Path('./input.txt').read_text()))
+
+if __name__ == '__main__':
+    start = time.time()
+    part2(Path('./input.txt').read_text())
+    print((time.time() - start) * 1000)
