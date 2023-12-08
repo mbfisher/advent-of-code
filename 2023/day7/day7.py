@@ -4,7 +4,7 @@ from pathlib import Path
 
 CARDS1 = {card: score for score, card in enumerate(["2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"])}
 CARDS2 = {card: score for score, card in
-          enumerate(["J", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"])}
+          enumerate(["J", "2", "3", "4", "5", "6", "7", "8", "9", "T", "Q", "K", "A"])}
 
 
 def type_score(hand: str) -> int:
