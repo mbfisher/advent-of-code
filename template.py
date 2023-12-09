@@ -1,4 +1,5 @@
 import unittest
+from inspect import cleandoc
 from pathlib import Path
 
 
@@ -11,7 +12,8 @@ def part2(input: str) -> int:
 
 
 class Test(unittest.TestCase):
-    example1 = '\n'.join([])
+    example1 = cleandoc("""
+        """)
 
     def test_part_1(self):
         self.assertEqual(0, part1(Test.example1))
