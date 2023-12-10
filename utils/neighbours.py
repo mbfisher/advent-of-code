@@ -1,5 +1,6 @@
 from enum import Enum
-from typing import Tuple, Iterator
+from typing import Tuple, Iterator, Optional
+
 
 class Direction(Enum):
     N = (-1, 0)
@@ -10,6 +11,7 @@ class Direction(Enum):
     SW = (1, -1)
     W = (0, -1)
     NW = (-1, -1)
+
 
 DIRECTIONS_ALL = (
     Direction.N,
@@ -43,3 +45,14 @@ def neighbours(position: Position, grid: Grid, directions=DIRECTIONS_ALL) -> Ite
             continue
 
         yield (dr, dc), direction
+
+
+def neighbour(position: Position, grid: Grid, direction=Direction) -> Optional[Tuple[str, Position]]:
+    r, c = position
+
+    dr, dc = r + direction.value[0], c + direction.value[1]
+
+    if dr < 0 or dr > len(grid) - 1 or dc < 0 or dc > len(grid[0]) - 1:
+        return None
+
+    return grid[dr][dc], (dr, dc)
