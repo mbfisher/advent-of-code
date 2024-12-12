@@ -1,5 +1,5 @@
-import re
 import unittest
+from functools import cmp_to_key
 from pathlib import Path
 from typing import Tuple, List, Dict, Set
 
@@ -49,8 +49,30 @@ def part1(input: str) -> int:
     return result
 
 
-def part2(input: str, debug=False) -> int:
-    return 0
+def part2(input: str) -> int:
+    rules, updates = parse(input)
+    result = 0
+
+    for update in updates:
+        for i, page in enumerate(update):
+            if page not in rules:
+                continue
+
+            # 47|53 = 47 MUST be before 53 = 53 MUST be after 47
+            # 47: 1, 2, 3 = 47 MUST be before 1 and 2 and 3 = 1 and 2 and 3 MUST be after 47
+            pages_that_must_be_after_this_one = rules[page]
+            pages_before_this_one = set(update[:i])
+
+            # .difference = all elements that are in this set but not the others
+            if pages_before_this_one.difference(pages_that_must_be_after_this_one) != pages_before_this_one:
+                valid_update = sorted(update,
+                                      # if b is in rules[a] then b MUST be after A
+                                      key=cmp_to_key(lambda a, b: 0 if a not in rules else -1 if b in rules[a] else 0))
+
+                result += valid_update[len(valid_update) // 2]
+                break
+
+    return result
 
 
 class Test(unittest.TestCase):
@@ -91,6 +113,6 @@ class Test(unittest.TestCase):
         print(part1(Path('./input.txt').read_text()))
 
     def test_part_2(self):
-        self.assertEqual(9, part2(Test.example1, debug=True))
+        self.assertEqual(123, part2(Test.example1))
 
-        print(part2(Path('./input.txt').read_text(), debug=False))
+        print(part2(Path('./input.txt').read_text()))
