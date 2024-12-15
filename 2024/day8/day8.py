@@ -30,10 +30,6 @@ def part1(input: str) -> int:
                 if 0 <= an[0] < len(city_map) and 0 <= an[1] < len(city_map[0]):
                     antinodes.add(an)
 
-    # for locs in antennas.values():
-    #     for loc in locs:
-    #         antinodes.discard(loc)
-
     output = list(map(list, input.splitlines()))
     for r, c in antinodes:
         output[r][c] = '#'
@@ -42,8 +38,41 @@ def part1(input: str) -> int:
     return len(antinodes)
 
 
-def part2(input: str, debug=False) -> int:
-    return 0
+def part2(input: str) -> int:
+    city_map = input.splitlines()
+    antennas = {}
+    antinodes = set()
+
+    for r, line in enumerate(city_map):
+        for c, char in enumerate(line):
+            if char == ".":
+                continue
+
+            antennas.setdefault(char, []).append((r, c))
+
+    for frequency, locs in antennas.items():
+        for a, b in itertools.combinations(locs, r=2):
+            dy, dx = b[0] - a[0], b[1] - a[1]
+
+            loc = a
+            while 0 <= loc[0] < len(city_map) and 0 <= loc[1] < len(city_map[0]):
+                antinodes.add(loc)
+                loc = (loc[0] + dy, loc[1] + dx)
+
+
+            loc = b
+            while 0 <= loc[0] < len(city_map) and 0 <= loc[1] < len(city_map[0]):
+                antinodes.add(loc)
+                loc = (loc[0] - dy, loc[1] - dx)
+
+
+    output = list(map(list, input.splitlines()))
+    for r, c in antinodes:
+        if output[r][c] == '.':
+            output[r][c] = '#'
+    print('\n'.join(map(lambda line: ''.join(line), output)))
+
+    return len(antinodes)
 
 class Test(unittest.TestCase):
     example1 = """
@@ -67,6 +96,6 @@ class Test(unittest.TestCase):
         print(part1(Path('./input.txt').read_text()))
 
     def test_part_2(self):
-        self.assertEqual(11387, part2(Test.example1, debug=True))
+        self.assertEqual(34, part2(Test.example1))
 
         print(part2(Path('./input.txt').read_text()))
