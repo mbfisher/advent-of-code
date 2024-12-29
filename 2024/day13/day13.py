@@ -16,30 +16,36 @@ def machines(input: str) -> Tuple[Tuple[str, str, str], ...]:
         else:
             machine.append(line)
 
+    result.append(tuple(machine))
+
     return tuple(result)
+
 
 button_pattern = re.compile(r'Button [A-Z]: X([^,]+), Y(.+)$')
 prize_pattern = re.compile(r'Prize: X=(\d+), Y=(\d+)$')
 
-def min_tokens(machine: Tuple[str, str, str]) -> int:
-    button_a = tuple(map(int, button_pattern.match(machine[0]).groups()))
-    button_b = tuple(map(int, button_pattern.match(machine[1]).groups()))
-    prize = tuple(map(int, prize_pattern.match(machine[2]).groups()))
 
-    for i in range(1, 101):
-        for j in range(1, 101):
-            if button_a[0] * i + button_b[0] * j == prize[0] and button_a[1] * i + button_b[1] * j == prize[1]:
-                return i * 3 + j
+def min_tokens(machine: Tuple[str, str, str], offset=0) -> int:
+    ax, ay = tuple(map(int, button_pattern.match(machine[0]).groups()))
+    bx, by = tuple(map(int, button_pattern.match(machine[1]).groups()))
+    px, py = tuple(map(int, prize_pattern.match(machine[2]).groups()))
+
+    px, py = px + offset, py + offset
+
+    j = (py * ax - ay * px) / (by * ax - ay * bx)
+    i = (px - bx * j) / ax
+
+    if int(j) == j and int(i) == i:
+        return int(i * 3 + j)
 
     return 0
+
 
 def part1(input: str) -> int:
     return sum(map(min_tokens, machines(input)))
 
-
 def part2(input: str) -> int:
-    return 0
-
+    return sum(map(lambda machine: min_tokens(machine, offset=10000000000000), machines(input)))
 
 class Test(unittest.TestCase):
     example1 = """
@@ -71,6 +77,9 @@ Prize: X=18641, Y=10279
         print(part1(Path('./input.txt').read_text()))
 
     def test_part_2(self):
-        self.assertEqual(80, part2(self.example1))
-        self.assertEqual(1206, part2(self.example2))
+        self.assertEqual(min_tokens(machines(self.example1)[0], offset=10000000000000), 0)
+        self.assertGreater(min_tokens(machines(self.example1)[1], offset=10000000000000), 0)
+        self.assertEqual(min_tokens(machines(self.example1)[2], offset=10000000000000), 0)
+        self.assertGreater(min_tokens(machines(self.example1)[3], offset=10000000000000), 0)
+
         print(part2(Path('./input.txt').read_text()))
