@@ -45,8 +45,60 @@ def part1(input: str) -> int:
     return safety_factor(input)
 
 
+def christmas_tree(input: str, h=101, v=103) -> int:
+    pattern = re.compile(r'-*\d+')
+
+    robots = []
+    space = [[0 for _ in range(h)] for _ in range(v)]
+    for line in input.splitlines():
+        x, y, vx, vy = tuple(map(int, pattern.findall(line)))
+        space[y][x] += 1
+        robots.append((x, y, vx, vy))
+
+    t = 0
+    while True:
+        t += 1
+        rows = {y: set() for y in range(v)}
+
+        for i, robot in enumerate(robots):
+            x, y, _, _ = robot
+            space[y][x] -= 1
+
+            robots[i] = move(robot, h, v)
+
+            x, y, _, _ = robots[i]
+            space[y][x] += 1
+
+            rows[y].add(x)
+
+        maybe_rows = 0
+
+        for y, cols in rows.items():
+            if maybe_rows == 5:
+                print("\n".join("".join("." if tile == 0 else str(tile) for tile in row) for row in space), "\n")
+                return t
+
+            cols = tuple(1 if x in cols else 0 for x in range(h))
+
+            i = 0
+            j = 1
+
+            while i < len(cols) and j < len(cols):
+                if cols[i] > 0 and cols[j] > 0:
+                    if j - i >= 5:
+                        maybe_rows += 1
+                        print(t, y, i, j)
+                        break
+
+                    j += 1
+
+                else:
+                    i = i + 1
+                    j = i + 1
+
+
 def part2(input: str) -> int:
-    return 0
+    return christmas_tree(input)
 
 
 class Test(unittest.TestCase):
